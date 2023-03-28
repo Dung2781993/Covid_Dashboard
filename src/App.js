@@ -2,11 +2,13 @@ import "./App.css";
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import axios from "axios";
-// Imports end
+import Card from "./SummaryCard";
 
 function App() {
   const [activeLocation, setActiveLocation] = useState("AB");
   const [lastUpdated, setlastUpdated] = useState("");
+  const [summaryData, setSummaryData] = useState({});
+
   const COVID_URL = "https://api.opencovid.ca";
 
   const locationList = [
@@ -27,11 +29,25 @@ function App() {
 
   useEffect(() => {
     getVersion();
+    getSummaryData();
   }, [activeLocation]);
 
   const getVersion = async () => {
     const response = await axios.get(`${COVID_URL}/version`);
     setlastUpdated(response?.data?.timeseries);
+  };
+
+  const getSummaryData = async (location) => {
+    if (activeLocation === "canada") {
+      return;
+    }
+    const response = await axios.get(`${COVID_URL}/summary?loc=${activeLocation}`);
+    let summaryData = response?.data?.data[0];
+    let formattedData = {};
+    Object.keys(summaryData).map(
+      (key) => (formattedData[key] = summaryData[key].toLocaleString())
+    );
+    setSummaryData(formattedData);
   };
 
   return (
@@ -51,7 +67,15 @@ function App() {
           />
           <p className="update-date">Last Updated : {lastUpdated}</p>
         </div>
-        <div className="dashboard-summary"></div>
+        <div className="dashboard-summary">
+          <Card title="Total Cases" value={summaryData.cases} />
+          <Card title="Total Tests" value={summaryData.tests_completed} />
+          <Card title="Total Deaths" value={summaryData.deaths} />
+          <Card
+            title="Total Vaccinated"
+            value={summaryData.vaccine_administration_total_doses}
+          />
+        </div>
       </div>
     </div>
   );
